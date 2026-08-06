@@ -29,6 +29,7 @@ bin/
 screenshots/
 allure-results/
 allure-report/
+.allure/
 test-output/
 
 # OS
