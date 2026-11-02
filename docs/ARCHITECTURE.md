@@ -119,7 +119,7 @@ selenium-java-testng-framework/
     └── ci.yml                       (Phase 1G)
 ```
 
-> **Note:** Phase 1B created the `com.automation.*` skeleton. Phase 1C implemented `DriverFactory`, `WaitUtils`, `ScreenshotUtils`, `BasePage`, `BaseTest`, and `FrameworkSmokeTest` (open Sauce Demo + quit). Listeners live under `src/test/java` (TestNG is test-scoped). Page objects and business tests land in Phases 1D–1E.
+> **Note:** Phase 1B created the `com.automation.*` skeleton. Phase 1C implemented `DriverFactory`, `WaitUtils`, `ScreenshotUtils`, `BasePage`, `BaseTest`, and `FrameworkSmokeTest` (open Sauce Demo + quit). Listeners live under `src/test/java` (TestNG is test-scoped). Page objects and business tests landed in Phases 1D–1E. Phase 1G added `.github/workflows/ci.yml`.
 
 ---
 
@@ -179,7 +179,10 @@ browser=chrome
 baseUrl=https://www.saucedemo.com/
 implicitWait=0
 explicitWait=15
+headless=false
 ```
+
+Resolution order: **system property** → **environment variable** (`baseUrl` → `BASE_URL`) → file.
 
 | Key | Meaning |
 |-----|---------|
@@ -187,6 +190,7 @@ explicitWait=15
 | `baseUrl` | Sauce Demo entry URL |
 | `implicitWait` | Prefer `0` when using explicit waits |
 | `explicitWait` | Default timeout (seconds) for WaitUtils |
+| `headless` | `true` in CI; `false` locally |
 
 Credentials for public demo users stay in tests/data providers (not secrets):
 
@@ -201,11 +205,15 @@ Credentials for public demo users stay in tests/data providers (not secrets):
 ## 9. Execution model
 
 ```text
-mvn clean test -DsuiteXmlFile=src/test/resources/testng-smoke.xml
-mvn clean test -DsuiteXmlFile=src/test/resources/testng-regression.xml
+mvn clean test -Psmoke
+mvn clean test -Pregression
 ```
 
-CI (Phase 1G) runs **smoke** on every push/PR to `main`.
+Maven profiles override `suiteXmlFile` only. Surefire stays in a single plugin block. CI (Phase 1G) runs **smoke** on every push/PR to `main` via `.github/workflows/ci.yml`:
+
+```text
+mvn -B clean test -Psmoke -Dheadless=true
+```
 
 Parallel (Phase 1F):
 
@@ -236,8 +244,8 @@ Parallel (Phase 1F):
 | **1D** | Page objects | Login → Inventory → Cart → Checkout pages |
 | **1E** | Tests + suites | 5–8+ tests green via Maven |
 | **1F** | Parallel + reporting | Report generated; parallel smoke works |
-| **1G** | GitHub Actions | CI badge green on README |
-| **1H** | Portfolio wiring | Site/profile point at runnable repo |
+| **1G** | GitHub Actions | CI badge green on README — workflow added; badge turns green after first successful run on `main` |
+| **1H** | Portfolio wiring | Site/profile point at runnable repo — public Sauce Demo proof linked from [ashishautomation.com](https://www.ashishautomation.com) and GitHub profile; enterprise VMS remains a case study without a public repo |
 
 ---
 

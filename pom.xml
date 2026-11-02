@@ -18,6 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <suiteXmlFile>src/test/resources/testng-smoke.xml</suiteXmlFile>
         <allure.version>2.27.0</allure.version>
+        <headless>false</headless>
     </properties>
 
     <dependencies>
@@ -70,6 +71,7 @@
                     </suiteXmlFiles>
                     <systemPropertyVariables>
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                        <headless>${headless}</headless>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -86,5 +88,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>smoke</id>
+            <properties>
+                <suiteXmlFile>src/test/resources/testng-smoke.xml</suiteXmlFile>
+            </properties>
+        </profile>
+        <profile>
+            <id>regression</id>
+            <properties>
+                <suiteXmlFile>src/test/resources/testng-regression.xml</suiteXmlFile>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
