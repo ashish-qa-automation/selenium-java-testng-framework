@@ -1,0 +1,59 @@
+---
+description: Package map, component responsibilities, and where new automation code must live
+alwaysApply: true
+---
+
+# Framework architecture
+
+Root package: `com.automation`. Put new types in the existing package that already owns that responsibility. Do not invent parallel layers (`services`, `workflows`, `components`, `factories`) unless asked.
+
+## Layout
+
+```text
+src/main/java/com/automation/
+  config/    ConfigReader          classpath config.properties
+  driver/    DriverFactory         ThreadLocal WebDriver
+  pages/     BasePage + screen POs
+  utils/     WaitUtils, ScreenshotUtils
+src/test/java/com/automation/
+  base/      BaseTest              @BeforeMethod / @AfterMethod
+  listeners/ TestListener, RetryAnalyzer, RetryTransformer
+  data/      LoginDataProvider
+  tests/     LoginTests, CartTests, CheckoutTests, FrameworkSmokeTest
+src/test/resources/
+  config.properties, allure.properties, testng-smoke.xml, testng-regression.xml
+```
+
+Main vs test: TestNG, Allure, listeners, tests, and data stay under `src/test/java` because TestNG is `test` scoped. Do not move listeners to `main`.
+
+## Responsibilities
+
+| Class | Owns | Does not own |
+|-------|------|----------------|
+| `DriverFactory` | Create/quit Chrome, Firefox, Edge; `ThreadLocal`; timeouts; headless flags | Navigation, locators, assertions |
+| `ConfigReader` | Typed accessors over properties | Credentials, test data |
+| `BasePage` | `click`, `type` (React JS setter), `getText`, `isDisplayed`, `findVisible` | Business assertions |
+| Page classes | Locators + actions for **one** Sauce Demo screen; return next page or `this` | TestNG, expected results |
+| `WaitUtils` | Explicit waits from `ConfigReader.getExplicitWait()` (15s) | Sleeps, implicit waits |
+| `ScreenshotUtils` | PNG under `screenshots/` | When to capture (listener does) |
+| `BaseTest` | `initDriver` + `get(baseUrl)` / `quitDriver` | Login, product setup |
+| `TestListener` | Failure screenshot + Allure attach | Retry policy |
+| `RetryTransformer` | Attach `RetryAnalyzer` (max 1 retry) to every `@Test` | Changing retry count |
+| Tests | Arrange–act–assert; groups; Assert | Locators (except `FrameworkSmokeTest`) |
+| Data providers | Parameter rows + public demo constants | WebDriver |
+
+## Driver lifecycle
+
+`BaseTest.setUp` → `DriverFactory.initDriver()` → `get(ConfigReader.getBaseUrl())`. `tearDown` always calls `DriverFactory.quitDriver()`. Tests do **not** create `new ChromeDriver()` or share a static `WebDriver`. Obtain the driver only via `DriverFactory.getDriver()` (throws if init was skipped).
+
+## Page graph (reuse these types)
+
+`LoginPage` → `InventoryPage` → `CartPage` → `CheckoutInfoPage` → `CheckoutOverviewPage` → `CheckoutCompletePage`. Logout: `InventoryPage.logout()` → `LoginPage`.
+
+## Reuse before writing
+
+Search `WaitUtils`, `BasePage`, existing page methods, and `LoginDataProvider` constants before adding helpers. `BasePage.type` already handles React controlled inputs. `BasePage.click` already waits, `scrollIntoView`, and JS-clicks.
+
+## Missing layers (do not invent)
+
+No workflow/facade classes, no `JSUtils`, no logger module, no custom exceptions, no Excel/JSON data loaders, no REST client, no Grid hub config. If a task needs one, say it is missing and ask before adding it.

@@ -1,0 +1,53 @@
+---
+description: Mandatory AI behavior when generating, changing, or debugging automation in this repo
+alwaysApply: true
+---
+
+# AI code generation governance
+
+Rules do not guarantee correctness. Review and execution remain mandatory.
+
+## Before writing code
+
+1. Read the existing class or a neighbor in the same package (`LoginPage`, `LoginTests`, `WaitUtils`, etc.).
+2. Search for a reusable method (`click`, `type`, `waitForUrlContains`, `loginSuccessfully`, `LoginDataProvider.STANDARD_USER`) before duplicating it.
+3. Place the type in the package that already owns that job (see framework architecture).
+4. If a capability is missing (logger, Excel, workflow class, `@Step`), **say so** — do not silently add a library or a new layer.
+
+## While implementing
+
+- Match Java 11, 4-space indent, existing names, and fluent page returns.
+- Do not add Maven dependencies, TestNG listeners, or suite XML entries unless required for the asked change.
+- Do not modify unrelated files, business tests, or `.github/workflows/ci.yml`.
+- Do not change existing test behavior, groups, retry count, or parallel settings unless asked.
+- Keep `implicitWait=0`. Never add `Thread.sleep`.
+- Credentials for Sauce Demo stay in `com.automation.data`; do not put them in `config.properties`.
+- Do not annotate `src/main/java` with Allure (`allure-testng` is test-scoped).
+
+## Architectural change
+
+If the request needs a new package, a new dependency, a shared login `@BeforeMethod`, native click instead of `BasePage.click`, or a wait-policy change, **explain the impact first** and wait for agreement unless the user already ordered that change.
+
+## Assumptions
+
+State missing requirements (locator, expected text, group, product name) instead of guessing. Prefer Sauce Demo `data-test` / `id` values already used in pages.
+
+## After changing code
+
+1. Compile: `mvn -q -DskipTests compile test-compile` when possible.
+2. Run the smallest relevant suite or class (`-Dtest=LoginTests`, or `-Psmoke`) when the change is behavioral.
+3. Report: files changed, files not changed, what was run, what was not run, residual risk.
+
+## Debugging (root cause first)
+
+Do not “fix” a failure by adding waits, retries, or JS hacks until classified:
+
+| Class | Examples | Action |
+|-------|----------|--------|
+| Application defect | Assertion text wrong vs UI | Keep test; report expected vs actual |
+| Environment | Sauce Demo down, Chrome mismatch | Do not mask with sleep/retry |
+| Test data | Wrong user/product | Fix data/constants only |
+| Framework defect | `DriverFactory` / wait / `BasePage.type` | Fix the shared method; do not patch one test |
+| Automation defect | Bad locator, missing `isLoaded` wait | Fix the page object |
+
+Retry is already 1 via `RetryAnalyzer`. Do not raise `MAX_RETRY` to hide flakes.

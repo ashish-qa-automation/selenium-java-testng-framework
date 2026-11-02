@@ -1,0 +1,52 @@
+---
+description: Test design for com.automation.tests — independence, fluent pages, assertions, groups
+globs: src/test/java/com/automation/tests/**/*.java
+alwaysApply: false
+---
+
+# Test design and maintainability
+
+## Class rules
+
+- Extend `BaseTest`. Package: `com.automation.tests`.
+- One area per class (`LoginTests`, `CartTests`, `CheckoutTests`).
+- Method names: `should...`. Groups: `smoke` (critical path) or `regression`.
+- Tests are independent: login inside the test. Do not depend on cart state from a previous method (`parallel="methods"` + fresh browser each method).
+
+## Arrange–act–assert with pages
+
+```java
+@Test(groups = "smoke", description = "Complete checkout happy path")
+public void shouldCompleteCheckoutHappyPath() {
+    CheckoutCompletePage completePage = new LoginPage()
+            .loginSuccessfully(LoginDataProvider.STANDARD_USER, LoginDataProvider.PASSWORD)
+            .addProductToCart(BACKPACK)
+            .openCart()
+            .clickCheckout()
+            .fillInfo("Ashish", "Chauhan", "110001")
+            .continueCheckoutSuccessfully()
+            .finish();
+
+    Assert.assertTrue(completePage.isLoaded(), "Checkout complete page should be visible");
+    Assert.assertEquals(completePage.getConfirmationMessage(), "Thank you for your order!",
+            "Confirmation message should match");
+}
+```
+
+Use TestNG `Assert` with a message. No SoftAssert today — do not add it unless asked. Assertions belong in the test, not the page.
+
+## Do not
+
+- Locators or `By.id` in business tests (`FrameworkSmokeTest` is the only existing exception; do not extend it).
+- `DriverFactory.initDriver()` / `quit()` inside tests.
+- Shared static session helpers that break parallel isolation.
+- Duplicate login literals; use `LoginDataProvider` constants.
+- New test class without adding it to `testng-smoke.xml` and `testng-regression.xml`.
+
+## Negative vs success paths
+
+Call `login` / `continueCheckout` when the next page may not load; then assert `getErrorMessage()`. Call `*Successfully` only when navigation is expected.
+
+## Missing
+
+No workflow helper wrapping login+add+checkout. Tests compose page calls. If a flow is copied three times, extract a **test-local private method** first, not a new `main` workflow class, unless asked.

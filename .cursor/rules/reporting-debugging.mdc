@@ -1,0 +1,35 @@
+---
+description: Allure reporting, failure screenshots, retry noise, and how to debug test failures
+globs: src/test/java/com/automation/listeners/**/*.java,src/main/java/com/automation/utils/ScreenshotUtils.java
+alwaysApply: false
+---
+
+# Reporting and debugging
+
+## Failure artifacts
+
+`TestListener.onTestFailure` → `ScreenshotUtils.capture(result.getName())` → PNG in `screenshots/` (gitignored) → `Allure.addAttachment`. Do not capture screenshots from tests on success. Do not switch to Extent Reports.
+
+Allure results: `target/allure-results` (`allure.properties` + Surefire `allure.results.directory`). Generate with `mvn allure:report` or `mvn allure:serve`. Listener `AllureTestNg` is registered in both suite XMLs.
+
+`ScreenshotUtils` sanitizes the test name and appends `yyyyMMdd_HHmmss`. Overload `capture(WebDriver, testName)` exists; prefer `capture(testName)` so it uses `DriverFactory.getDriver()`.
+
+## Allure in tests/pages
+
+`allure-testng` is on the test classpath. Page/test methods do **not** currently use `@Step`, `@Epic`, `@Feature`, or `@Story`. Adding them is optional and must not be required to compile main pages (`allure-testng` is `test` scoped — **do not** annotate `src/main/java` with Allure).
+
+## Retry vs real failures
+
+`RetryAnalyzer.MAX_RETRY = 1` is applied globally by `RetryTransformer`. A failure may run twice. Screenshots can appear for the failed attempt. Do not increase retries. Do not disable the transformer in one suite only.
+
+## Debug a failure (order)
+
+1. Read assertion message and Allure / `screenshots/` PNG.
+2. Confirm config: `baseUrl`, `headless`, browser, `explicitWait`.
+3. Classify: app vs environment vs data vs framework vs locator/script (see AI governance table).
+4. Re-run the single method: `mvn test -Dtest=LoginTests#shouldShowErrorForLockedOutUser`.
+5. Fix the page or data, not the listener, unless reporting itself is broken.
+
+## Missing
+
+No video, no console-log capture, no network HAR, no structured logger in reports, no Allure categories.json. Identify these as gaps; do not add them unasked.

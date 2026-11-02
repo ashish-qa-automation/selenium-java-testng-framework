@@ -1,0 +1,53 @@
+---
+description: Review and validate generated automation against this framework before considering work done
+alwaysApply: false
+---
+
+# Code review and validation
+
+Use this checklist on AI-generated or human diffs. Passing the checklist is not a production guarantee.
+
+## Architecture
+
+- [ ] Type lives in the existing `com.automation.*` package for that job
+- [ ] No new Maven dependency, package, or GitHub Actions edit unless requested
+- [ ] No PageFactory, Extent, Excel, SLF4J, or `Thread.sleep`
+- [ ] Driver only via `DriverFactory`; tests extend `BaseTest`
+
+## Pages
+
+- [ ] `private static final By` locators; `id` / `data-test` preferred
+- [ ] Actions use `click` / `type` / `getText` / `isDisplayed` / `findVisible`
+- [ ] Fluent return: `this` or next page; `isLoaded()` present
+- [ ] No TestNG asserts in pages
+- [ ] Success navigation waits via `WaitUtils.waitForUrlContains` where existing pages do
+
+## Tests
+
+- [ ] `should*` name, `groups`, `description`
+- [ ] Independent (self-login); uses `LoginDataProvider` constants
+- [ ] Class listed in both TestNG XMLs if it is a new class
+- [ ] Assertions have messages; locators not in business tests
+
+## Config / waits
+
+- [ ] `implicitWait` still 0; no hardcoded 30s waits
+- [ ] New config keys added to `config.properties` **and** a `ConfigReader` accessor if introduced
+
+## Validate (run what you can)
+
+```text
+mvn -q -DskipTests compile test-compile
+mvn test -Dtest=TheChangedTestClass
+# or
+mvn test -Psmoke "-Dheadless=true"
+```
+
+Report exactly: compile result, which tests ran, which were skipped, screenshots/Allure if a failure was investigated.
+
+## Contradiction watch
+
+- Do not “fix” JS click by adding native click in one page while `BasePage.click` remains JS-based — change is global.
+- Do not add `@Step` on `src/main/java` (Allure is test-scoped).
+- Do not raise `RetryAnalyzer.MAX_RETRY` to green a flake.
+- Do not treat `FrameworkSmokeTest` locators as a template for `LoginTests`.

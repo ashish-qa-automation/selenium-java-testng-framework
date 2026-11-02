@@ -1,0 +1,45 @@
+---
+description: Selenium 4 usage in this repo — DriverFactory, locators, BasePage actions, browsers, no PageFactory
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Selenium practices (this framework)
+
+## Driver
+
+Use `DriverFactory` only. Supported browsers: `chrome` (default), `firefox`, `edge` via `ConfigReader.getBrowser()`. Headless Chromium uses `--headless=new` plus window size; Firefox uses `-headless`. Do not add Safari/IE/Grid remote URLs unless asked.
+
+```java
+// BAD
+WebDriver driver = new ChromeDriver();
+
+// GOOD — tests rarely need this; pages already hold driver from BasePage
+WebDriver driver = DriverFactory.getDriver();
+```
+
+Do not store `WebDriver` in a static field. Do not call `quit()` from a test or page; `BaseTest.tearDown` owns that.
+
+## Locators
+
+Order used in existing pages: `By.id` → CSS `[data-test='...']` → `By.className` → XPath **only** for product-scoped buttons (`InventoryPage.addToCartButtonFor`, `CartPage.removeButtonFor`).
+
+- Locators live in page classes as `private static final By`.
+- Do **not** use `PageFactory` or `@FindBy`.
+- Do not put locators in business tests. Exception: `FrameworkSmokeTest` is a driver smoke check, not a product test — do not copy that pattern.
+
+## Actions
+
+Route user actions through `BasePage`:
+
+- `click(By)` — wait clickable, `scrollIntoView`, **JavaScript click** (Sauce Demo / overlay-safe).
+- `type(By, String)` — wait visible, then native-value setter + `input`/`change` events (React controlled fields).
+- `getText` / `isDisplayed` / `findVisible` — all wait visible first.
+
+Do not replace these with `Actions`, native `.click()`, or `sendKeys` unless a proven failure shows JS click/type is the bug — then explain before changing `BasePage` (it affects every page).
+
+Lists that may be empty use `driver.findElements` after the page is loaded (`getProductNames`, `getCartBadgeCount`). Do not `findElement` for optional badges.
+
+## Navigation
+
+`BaseTest` already opens `baseUrl`. Pages wait on URL fractions after moves (`inventory`, `cart.html`, `checkout-step-one`, `checkout-step-two`, `checkout-complete`). Prefer `WaitUtils.waitForUrlContains` after click-driven navigation instead of a new wait helper.

@@ -1,0 +1,41 @@
+---
+description: Explicit wait policy — WaitUtils, implicitWait=0, BasePage synchronization
+globs: src/main/java/com/automation/**/*.java
+alwaysApply: false
+---
+
+# Waits and synchronization
+
+Policy: **explicit waits only**. `config.properties` sets `implicitWait=0` and `explicitWait=15`. `DriverFactory` applies implicit wait from config — leave it at 0 so it does not fight `WebDriverWait`.
+
+## Use WaitUtils
+
+`com.automation.utils.WaitUtils` (timeout = `ConfigReader.getExplicitWait()`):
+
+| Method | When |
+|--------|------|
+| `waitForVisible` | Read/assert visibility (`BasePage` already wraps this) |
+| `waitForClickable` | Before click (`BasePage.click`) |
+| `waitForUrlContains` | After navigation (`loginSuccessfully`, `openCart`, `finish`) |
+| `waitForTitleContains` | Title checks (`FrameworkSmokeTest`) |
+| `waitForAttributeToBe` | Menu open: `aria-hidden=false` on `.bm-menu-wrap` |
+
+`BasePage` methods already wait. Page code should call `click`/`type`/`getText` rather than raw `WebDriverWait`. Extra `WaitUtils` calls belong **after** an action that changes URL or attribute.
+
+## Forbidden
+
+```java
+Thread.sleep(2000);           // never
+driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+new WebDriverWait(driver, Duration.ofSeconds(30)); // don't fork timeouts
+```
+
+Do not add FluentWait, custom polling, or a second wait class. If 15s is insufficient, change `explicitWait` (and say why) rather than hardcoding 30 in one page.
+
+## Patterns already in pages
+
+- Success login: `login` then `waitForUrlContains(driver, "inventory")`.
+- Logout: wait `aria-hidden=false` on menu wrap, then click logout, then wait login button visible.
+- Optional cart badge: `findElements` empty → `0`, do not wait for badge on an empty cart.
+
+`pageLoadTimeout` is 30s in `DriverFactory`. Do not duplicate page-load waits in tests.

@@ -1,0 +1,49 @@
+---
+description: TestNG lifecycle, groups, suites, parallel methods, retry, and Maven profiles
+globs: src/test/**/*.java,src/test/resources/testng-*.xml
+alwaysApply: false
+---
+
+# TestNG execution
+
+## Lifecycle
+
+Every test class extends `com.automation.base.BaseTest`.
+
+- `@BeforeMethod(alwaysRun = true)` — `DriverFactory.initDriver()` then `get(baseUrl)`.
+- `@AfterMethod(alwaysRun = true)` — `DriverFactory.quitDriver()`.
+- There is **no** shared login in `BaseTest`. Each test that needs a session calls `new LoginPage().loginSuccessfully(...)`.
+- Do not add `@BeforeClass` driver init; parallel mode is `methods`.
+
+## Annotations on tests
+
+```java
+@Test(groups = "smoke", description = "Valid login lands on inventory")
+public void shouldLoginWithValidCredentials() { ... }
+```
+
+- Groups: `smoke` or `regression` only (suites include by group name).
+- Always set `description`.
+- Data-driven: `@Test(..., dataProvider = "loginData", dataProviderClass = LoginDataProvider.class)`.
+- Do not set `retryAnalyzer` on methods — `RetryTransformer` in both suite XML files assigns `RetryAnalyzer` (max 1).
+
+## Suites
+
+| File | Suite name | Groups | Parallel |
+|------|------------|--------|----------|
+| `src/test/resources/testng-smoke.xml` | SauceDemo-Smoke | `smoke` | `methods`, `thread-count="2"` |
+| `src/test/resources/testng-regression.xml` | SauceDemo-Regression | `smoke` + `regression` | `methods`, `thread-count="2"` |
+
+Listeners in both XMLs: `TestListener`, `RetryTransformer`, `io.qameta.allure.testng.AllureTestNg`. Register new test **classes** in both XMLs or they will not run via Maven profiles.
+
+## Parallel rules
+
+`DriverFactory` uses `ThreadLocal`. Pages must not keep static WebDriver. Tests must not share UI state across methods. `thread-count` is 2; do not raise it in XML unless asked.
+
+## Maven
+
+`-Psmoke` / `-Pregression` only override `suiteXmlFile`. Default `pom.xml` property already points at smoke. Class-level debug: `mvn test -Dtest=CartTests`. Do not add a second Surefire plugin.
+
+## Missing
+
+No `@Parameters` / suite-level `<parameter>`, no `ITestContext` usage, no factory-based tests, no method-level `thread-count` overrides.

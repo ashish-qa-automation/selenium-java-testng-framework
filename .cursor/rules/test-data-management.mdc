@@ -1,0 +1,39 @@
+---
+description: Test data and config — LoginDataProvider, config.properties, no Excel/JSON loaders
+globs: src/test/java/com/automation/data/**/*.java,src/test/resources/config.properties
+alwaysApply: false
+---
+
+# Test data management
+
+## What exists
+
+- **Environment config:** `src/test/resources/config.properties` via `ConfigReader` (browser, URL, waits, headless). Not for users/passwords.
+- **Login data:** `com.automation.data.LoginDataProvider`
+  - Constants: `STANDARD_USER`, `LOCKED_OUT_USER`, `PASSWORD`
+  - `@DataProvider(name = "loginData")` rows: `username, password, expectSuccess, errorFragment`
+- **Product names:** string constants in test classes (`CartTests.BACKPACK = "Sauce Labs Backpack"`).
+- **Checkout PII:** inline in `CheckoutTests` (`"Ashish", "Chauhan", "110001"`). Public demo only.
+
+## How to add data
+
+1. Prefer a constant on `LoginDataProvider` or a new `*DataProvider` in `com.automation.data`.
+2. Keep DataProvider methods `public static Object[][]`.
+3. Reuse `STANDARD_USER` / `PASSWORD` in tests instead of string literals (`LoginTests` already does).
+4. New environments: override with `-DbaseUrl=...` or `BASE_URL`; do not fork properties files unless asked.
+
+```java
+// GOOD
+.loginSuccessfully(LoginDataProvider.STANDARD_USER, LoginDataProvider.PASSWORD)
+
+// BAD
+.loginSuccessfully("standard_user", "secret_sauce")
+```
+
+## Missing (do not invent)
+
+No Excel, CSV, JSON, YAML, Faker, or database fixtures. No credentials file. No `@Parameters` from TestNG XML. If a scenario needs a large table, say that only in-code DataProviders exist today and ask before adding a loader library.
+
+## Secrets
+
+Sauce Demo passwords are public and committed. Do not introduce a secrets manager for this AUT.

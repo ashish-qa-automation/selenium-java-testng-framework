@@ -1,0 +1,40 @@
+---
+description: Java 11 coding standards used by this framework (utility classes, naming, imports, no extra libraries)
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Java coding standards
+
+Target **Java 11**. Do not use records, text blocks, switch expressions, or APIs newer than 11.
+
+## Class shape
+
+- Utility / factory types are `public final` with a **private constructor**: `DriverFactory`, `ConfigReader`, `WaitUtils`, `ScreenshotUtils`, `LoginDataProvider`.
+- Page objects are concrete classes extending `BasePage`. Tests extend `BaseTest`.
+- No Lombok, Guice, or Spring. No `var` in new framework code unless a nearby file already uses it (current sources do not).
+- Keep fields `private`. Locators are `private static final By`.
+- Do not introduce shared mutable statics other than `ConfigReader`'s properties and `DriverFactory`'s `ThreadLocal`.
+
+## Naming
+
+| Kind | Pattern | Example |
+|------|---------|---------|
+| Page class | `<Screen>Page` | `CheckoutInfoPage` |
+| Test class | `<Area>Tests` | `CartTests` |
+| Test method | `should<Behavior>` | `shouldLoginWithValidCredentials` |
+| Locator | `UPPER_SNAKE` | `LOGIN_BUTTON` |
+| Constants | `UPPER_SNAKE` | `STANDARD_USER` |
+| Packages | existing `com.automation.*` | do not create `com.saucedemo` |
+
+## Style
+
+- Explicit imports; no `import org.openqa.selenium.*` except where a file already needs many Selenium types.
+- 4-space indent; braces on the same style as neighboring files.
+- One public top-level class per file.
+- Prefer existing typed accessors (`ConfigReader.getBaseUrl()`) over `getProperty("baseUrl")` in new code.
+- Fail fast with `IllegalStateException` / `RuntimeException` like `DriverFactory.getDriver()` and `ConfigReader` — **custom exception types do not exist**.
+
+## Dependencies
+
+Do not add libraries for problems already solved (`WaitUtils`, WebDriverManager, Allure). If Java 11 forces a verbose construct, keep it verbose rather than bumping the compiler level.

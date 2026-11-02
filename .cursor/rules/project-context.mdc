@@ -1,0 +1,52 @@
+---
+description: Project context, stack versions, AUT, Maven execution, and dependency constraints for this Selenium Java TestNG framework
+alwaysApply: true
+---
+
+# Project context
+
+Public Sauce Demo UI framework (`https://www.saucedemo.com/`). Recruiter-ready sample, not client/NDA code.
+
+## Stack (do not silently upgrade)
+
+| Component | Version / location |
+|-----------|-------------------|
+| Java | 11 (`pom.xml` `maven.compiler.source/target`) |
+| Maven | compiler 3.11.0, Surefire 3.2.5 |
+| Selenium | 4.16.1 `selenium-java` |
+| TestNG | 7.9.0 (`test` scope) |
+| WebDriverManager | 5.6.3 |
+| Allure | 2.27.0 `allure-testng` + `allure-maven` 2.13.0 |
+| GroupId / artifact | `com.automation` / `selenium-java-testng-framework` |
+
+No Lombok, Spring, Rest Assured, Excel/POI, Extent, Log4j, or SLF4J. Do not add dependencies unless the engineer explicitly asks.
+
+## Run commands
+
+```text
+mvn clean test                         # smoke (default suiteXmlFile)
+mvn clean test -Psmoke
+mvn clean test -Pregression            # smoke + regression groups
+mvn clean test "-Dheadless=true"       # CI-style; also HEADLESS=true
+mvn allure:report                      # HTML under target/allure-report
+```
+
+Profiles only switch `suiteXmlFile`. Do not add Surefire plugin blocks. Do not edit `.github/workflows/ci.yml` unless asked.
+
+## Config contract
+
+`src/test/resources/config.properties` keys: `browser`, `baseUrl`, `implicitWait`, `explicitWait`, `headless`.
+
+Resolution in `ConfigReader.getProperty`: **system property → env (`baseUrl` → `BASE_URL`) → file**. Keep `implicitWait=0`. Credentials are public demo values in `LoginDataProvider`, not secrets and not in properties.
+
+## AUT users (Sauce Demo)
+
+| User | Password | Use |
+|------|----------|-----|
+| `standard_user` | `secret_sauce` | Happy path (`LoginDataProvider.STANDARD_USER`) |
+| `locked_out_user` | `secret_sauce` | Negative login |
+| `problem_user` / `performance_glitch_user` | `secret_sauce` | **Not covered** — add only when requested |
+
+## Out of scope unless asked
+
+API tests, DB checks, mobile, Grid/Docker, Extent, Excel data, custom exception types, SLF4J, PageFactory, GitHub Actions changes, rewriting existing business tests.

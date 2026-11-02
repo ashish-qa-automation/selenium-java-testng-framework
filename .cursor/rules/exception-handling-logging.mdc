@@ -1,0 +1,32 @@
+---
+description: Exception and logging conventions — RuntimeException fail-fast, no SLF4J, listener catch on screenshots
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Exception handling and logging
+
+## What exists
+
+No Log4j, SLF4J, or Logback. Logging is `System.out` / `System.err` in listeners only (`TestListener`, `RetryAnalyzer`). Do not add a logging framework unless asked.
+
+No custom exception types. Framework code uses:
+
+| Site | Behavior |
+|------|----------|
+| `ConfigReader` static init | `RuntimeException` if `config.properties` missing or unloadable |
+| `DriverFactory.getDriver()` | `IllegalStateException` if `initDriver()` not called |
+| `ScreenshotUtils.capture` | `RuntimeException` wrapping IO failure |
+| `TestListener.onTestFailure` | Catch all, print to stderr, **do not** fail the test again |
+
+## Rules for new code
+
+- Fail fast in factories/config. Do not return `null` driver or swallow missing config.
+- Pages should let `TimeoutException` from `WaitUtils` propagate — that is a real failure. Do not catch and return `false` from `click`/`type`.
+- `isDisplayed` currently waits for visible; it will **timeout**, not return false, if the element never appears. For optional UI, use `driver.findElements(locator).isEmpty()` like `getCartBadgeCount`.
+- Listeners may catch `Exception` around screenshots so reporting never masks the original test failure.
+- Preserve exception cause: `throw new RuntimeException("Failed to load config.properties", e)`.
+
+## Missing
+
+No retry-on-exception helpers beyond TestNG `RetryAnalyzer`. No screenshot-on-error inside pages. Do not wrap every page method in try/catch.

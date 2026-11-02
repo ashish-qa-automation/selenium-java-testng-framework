@@ -1,0 +1,54 @@
+---
+description: Page Object Model conventions for com.automation.pages — locators, fluent returns, no assertions
+globs: src/main/java/com/automation/pages/**/*.java
+alwaysApply: false
+---
+
+# Page Object Model
+
+One class per Sauce Demo screen under `com.automation.pages`, extending `BasePage`. Constructor is inherited; it assigns `driver = DriverFactory.getDriver()`. Do not pass `WebDriver` into page constructors.
+
+## Required shape
+
+```java
+public class CartPage extends BasePage {
+    private static final By CHECKOUT_BUTTON = By.id("checkout");
+
+    public boolean isLoaded() {
+        return isDisplayed(CART_LIST);
+    }
+
+    public CheckoutInfoPage clickCheckout() {
+        click(CHECKOUT_BUTTON);
+        WaitUtils.waitForUrlContains(driver, "checkout-step-one");
+        return new CheckoutInfoPage();
+    }
+}
+```
+
+- `isLoaded()` on every page (existing pages already have it).
+- Actions that stay on the same screen return `this` (`addProductToCart`, `fillInfo`, `sortBy`).
+- Actions that change screens return the **next** page type (`loginSuccessfully` → `InventoryPage`).
+- Split success vs error paths when the next page is not guaranteed: `login` vs `loginSuccessfully`; `continueCheckout` vs `continueCheckoutSuccessfully`.
+
+## Assertions stay in tests
+
+Pages expose state (`getErrorMessage`, `getCartItemNames`, `getCartBadgeCount`). Tests call `Assert.assertTrue` / `assertEquals`. Do not add TestNG asserts inside pages.
+
+## Locators
+
+Keep them private. Parameterized XPath is a private method, not a public locator:
+
+```java
+private By addToCartButtonFor(String productName) { /* InventoryPage pattern */ }
+```
+
+Do not duplicate `LoginPage` locators in `InventoryPage.logout` long-term — logout already uses `By.id("login-button")` inline; prefer `new LoginPage()` + `isLoaded()` in new code.
+
+## New screens
+
+If Sauce Demo grows, add `*Page.java` next to the existing six screens and wire returns into the page graph. Do not create a `components/` package for header/cart badge — those locators already live on `InventoryPage`.
+
+## Missing
+
+No Appium, no loadable-component library, no abstract `gotoUrl` on pages (`BaseTest` owns navigation to `baseUrl`).
